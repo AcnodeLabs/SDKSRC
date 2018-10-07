@@ -5,7 +5,7 @@
 class AlgeApp {
 public:
 	b2World* pWorld;
-	i2 windowSize{ 320,480 };
+	
 	CTrackBall trackball;
 	//CEasyBullet bullet;
 	short renderSchemeVersion;//1=> Render processInput 2->UpdateCustom GOB's
@@ -62,11 +62,15 @@ public:
 		currentscene = 0;
 		LoadScene(currentscene);
 		counter = 0;
-		GameObject::windowSize.x = windowSize.x;
-		GameObject::windowSize.y = windowSize.y;
+		GameObject::windowSize.x = getBackgroundSize().x;
+		GameObject::windowSize.y = getBackgroundSize().y;
 	}
 
 	void Deinit() {}
+
+	virtual i2 getBackgroundSize() {
+		return i2(320,480);
+	}
 
 	//Preconditions: Dont call before init
 	//Assumption Scene is Saved from same arrangement of Gobs
@@ -89,7 +93,12 @@ public:
 	}
 	int orthoType;
 
-	void AddDefaultCamera(int camMode = Camera::CAM_MODE_FPS, int width2D = 800, int height2D = 600, int _orthoType=0) {
+	enum OrthoTypes {
+		ORIGIN_IN_MIDDLE_OF_SCREEN = 0,
+		ORIGIN_IN_TOP_LEFT_OF_SCREEN
+	};
+
+	void AddDefaultCamera(int camMode = Camera::CAM_MODE_FPS, int _orthoType= ORIGIN_IN_MIDDLE_OF_SCREEN) {
 		orthoType = _orthoType;
 		static bool once = false;
 		if (!once) {
@@ -98,8 +107,26 @@ public:
 			AddObject(&aCamera);
 			once = true;
 		}
-		aCamera.windowWidth = width2D;
-		aCamera.windowHeight = height2D;
+		aCamera.windowWidth = getBackgroundSize().x;
+		aCamera.windowHeight = getBackgroundSize().y;
+
+		if (orthoType == ORIGIN_IN_MIDDLE_OF_SCREEN) {
+			leftSide = -aCamera.windowWidth / 2.0;
+			rightSide = aCamera.windowWidth / 2.0;
+			bottomSide = -aCamera.windowHeight / 2.0;
+			topSide = aCamera.windowHeight / 2.0;
+			originX = 0;
+			originY = 0;
+		}
+		if (orthoType == ORIGIN_IN_TOP_LEFT_OF_SCREEN) {
+			leftSide = 0;
+			rightSide = aCamera.windowWidth;
+			bottomSide = aCamera.windowHeight;
+			topSide = 0;
+			originX = rightSide / 2;
+			originY = bottomSide / 2;
+		}
+
 	}
 
 
@@ -113,6 +140,8 @@ public:
 		g->pos.y = aCamera.windowHeight/2;
 
 	}
+	
+	int leftSide, rightSide, topSide, bottomSide, originX, originY;
 
 	void ViewOrthoBegin(int width, int height, int depth = 1)												// Set Up An Ortho View
 	{
@@ -120,8 +149,10 @@ public:
 		glMatrixMode(GL_PROJECTION);						// Select The Projection Matrix
 		glPushMatrix();										// Store The Projection Matrix
 		glLoadIdentity();									// Reset The Projection Matrix
-		if (orthoType==1) glOrtho(-width/2.0, width/2.0, -height/2.0, height/2.0, -depth, depth);							// Set Up An Ortho Screen
-		if (orthoType==0) glOrtho(0, width , height, 0, -depth, depth);
+
+
+		glOrtho(leftSide, rightSide, bottomSide, topSide, -depth, depth);
+
 		glMatrixMode(GL_MODELVIEW);							// Select The Modelview Matrix
 		glPushMatrix();										// Store The Modelview Matrix
 		glLoadIdentity();									// Reset The Modelview Matrix
@@ -291,6 +322,8 @@ public:
 		Init(path);
 		netmsg.Post(help);
 		aCamera.custom_type = 0xCA;
+		aCamera.windowWidth = getBackgroundSize().x;
+		aCamera.windowHeight = getBackgroundSize().y;
 	}
 
 	virtual void Init(char* path) {};
@@ -649,5 +682,10 @@ public:
 		output.pushP(CMD_SNDPLAY0+idx, $ name, 0);
 		
 	}
+
+	void SetTitle(char * name) {
+		output.pushP(CMD_TITLE, $ name, 0);
+	}
+
 };
 

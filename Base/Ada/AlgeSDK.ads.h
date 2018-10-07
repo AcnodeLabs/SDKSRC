@@ -35,6 +35,7 @@ public:
 	void clear() { x = 0; y = 0; }
 	f2() { clear(); };
 	f2(float mx, float my) { x = mx; y = my; }
+	void CopyFrom(i2 p) { x = float(p.x); y = float(p.y); }
 };
 
 class f3 {
@@ -208,6 +209,7 @@ public:
 		prsInstances.push_back(prs);
 	}
 	PosRotScale* getInstancePtr(int n) {
+		if (n < 0) return 0;
 		return &prsInstances.at(n-1);
 	}
     GameObject() {
