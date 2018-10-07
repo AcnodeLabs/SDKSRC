@@ -12,7 +12,7 @@ using namespace std;
 #define GLfloat float
 #include "../CCommands.h"
 #include "../../Classlets/com/acnodelabs/funkit/CAnimator.hpp"
-#include "../../ThirdParty/codecolony/camera.h"
+#include "../../Base/camera.h"
 
 const float FACTOR_RADIANS_DEGREES = 57.295779513082;
 void inline aluLookAt(GLfloat eyex, GLfloat eyey, GLfloat eyez,
