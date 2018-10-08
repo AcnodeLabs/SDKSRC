@@ -61,6 +61,9 @@ public:
     f3 rot;
     float scale = 1.0;
 	bool hidden = false;
+	int JuiceType;
+	int JuiceSpeed;
+	float originalScale;
 };
 
 class Serializable : public PosRotScale {
@@ -103,6 +106,13 @@ class Serializable : public PosRotScale {
     }
 };
 
+enum JuiceTypes {
+	JUICE_ROTZ =1,
+	JUICE_ROTZ_PULSATE =2,
+	JUICE_PULSATE=3,
+	JUICES_END
+};
+
 
 class GameObject : public Serializable {
 	
@@ -122,6 +132,8 @@ public:
    // float Scale;
     bool billboard;
     PosRotScale desirable;
+	int JuiceType;
+	int JuiceSpeed;
 	
 	static i2 windowSize;
 
@@ -205,7 +217,11 @@ public:
         children.push_back(child);
         child->parent = this;
     }
-	
+	void AddInstance(PosRotScale prs) {
+		prs.originalScale = prs.scale;
+		prsInstances.push_back(prs);
+	}
+
 	void AddInstance(f2 pos) {
 		PosRotScale prs;
 		prs.pos.x = pos.x;
@@ -213,7 +229,7 @@ public:
 		prsInstances.push_back(prs);
 	}
 	PosRotScale* getInstancePtr(int n) {
-		if (n < 0) return 0;
+		if (n <= 0) return 0;
 		return &prsInstances.at(n-1);
 	}
     GameObject() {

@@ -950,6 +950,7 @@ public:
 	float uv_array_gl[1];
 
 	TextureImage texture[1];
+	int textureWidth;
 
 	int n_indices_accessors;
 	int n_indices;
@@ -1022,6 +1023,11 @@ public:
 			}
 		}
 
+	}
+
+	//tries to get max depth of model
+	float originalWidth() {
+		return textureWidth * 2;
 	}
 
 	//tries to get max depth of model
@@ -2217,6 +2223,7 @@ public:
 					LoadTGA(models[modelId]->texture, tgafilename ? tgafilename : _alxfname);
 					//Assume if TGA is Avail tex stats from 1
 					if (models[modelId]->texture->texID == 0) models[modelId]->texture->texID = numloads;
+					models[modelId]->textureWidth = models[modelId]->texture->width;
 					numloads++;
 				}
 				else {

@@ -138,7 +138,7 @@ public:
 		AddObject(g);
 		g->pos.x = aCamera.windowWidth/2;
 		g->pos.y = aCamera.windowHeight/2;
-
+		g->originalScale = scale;
 	}
 	
 	int leftSide, rightSide, topSide, bottomSide, originX, originY;
@@ -180,6 +180,36 @@ public:
 		}
 	}
 
+	void ammendTopLeft2D(f3* pos, float scaledTo, float widthOriginal) {
+		float w = widthOriginal / scaledTo;
+		pos->x += 0.5 * w * (1 - scaledTo);
+		pos->y += 0.5 * w * (1 - scaledTo);
+	}
+
+
+	
+
+	void UpdateJuices(GameObject* it, int instanceNo, float deltaT) {
+		static float juice_sine;
+		static float juice_sine_angle;
+		PosRotScale* jprs = instanceNo < 1 ? (PosRotScale*)it : (it->getInstancePtr(instanceNo));
+		switch (it->JuiceType) {
+
+		case JuiceTypes::JUICE_ROTZ:
+			jprs->rot.z += (deltaT * it->JuiceSpeed);
+			break;
+		case JuiceTypes::JUICE_ROTZ_PULSATE:
+			jprs->rot.z += (deltaT * it->JuiceSpeed);
+			juice_sine_angle += 0.01 * it->JuiceSpeed / 5.;
+			jprs->scale = jprs->originalScale + 0.01 *jprs->originalScale  * sin(juice_sine_angle);
+			break;
+		case JuiceTypes::JUICE_PULSATE:
+			juice_sine_angle += deltaT * it->JuiceSpeed / 5.;
+			jprs->scale = jprs->originalScale  + 0.01 *jprs->originalScale  * sin(juice_sine_angle);
+			break;
+		}
+	}
+
 	void renderSingleObject(GameObject* it, float deltaT = 0.1f, int instanceNo = 0) {
 
 		static float wobble = 0.;
@@ -200,6 +230,7 @@ public:
 		relRot.y = it->rot.y;
 		relRot.z = it->rot.z;
 
+		//glScalef(it->scale, it->scale, it->scale);
 
 		if (it->parent) {
 			relPos.x += it->parent->pos.x;
@@ -219,8 +250,11 @@ public:
 		if (it->rotatefirst) glTranslatef(relPos.x, relPos.y, relPos.z);
 
 		if (it->hidden) return;
+		
+		UpdateJuices(it, instanceNo, deltaT);
 
 		glScalef(it->scale, it->scale, it->scale);
+		
 
 		if (edit) {
 			if (it->modelId >= 0)
@@ -234,6 +268,16 @@ public:
 		processInput(cmd, deltaT);
 		//it->Update(deltaT);
 		UpdateCustom(it, instanceNo, deltaT);
+	
+
+		if (instanceNo>0) {
+			PosRotScale* i = it->getInstancePtr(instanceNo);
+			i->pos.x = originX;
+			i->pos.y = originY;
+			float originalWidth = rm.models[it->modelId]->originalWidth();
+			ammendTopLeft2D(&i->pos, i->scale, originalWidth);
+		}
+
 
 		if (it->billboard) alBillboardBegin();
 
@@ -284,6 +328,8 @@ public:
 			origPRS.pos.x = it->pos.x; origPRS.pos.y = it->pos.y; origPRS.pos.z = it->pos.z;
 			origPRS.rot.x = it->rot.x; origPRS.rot.y = it->rot.y; origPRS.rot.z = it->rot.z;
 			origPRS.scale = it->scale;
+			origPRS.JuiceSpeed = it->JuiceSpeed;
+			origPRS.JuiceType = it->JuiceType;
 			origPRS.hidden = it->hidden;
 
 			bool instanced = (it->prsInstances.size() > 0);
@@ -293,6 +339,9 @@ public:
 				it->rot.x = prs.rot.x; it->rot.y = prs.rot.y; it->rot.z = prs.rot.z;
 				it->scale = prs.scale;
 				it->hidden = prs.hidden;
+				it->JuiceSpeed = prs.JuiceSpeed;
+				it->JuiceType = prs.JuiceType;
+
 				if (!prs.hidden) renderSingleObject(&(*it), deltaT, ins);
 				ins++;
 				instanced = true;
@@ -304,6 +353,9 @@ public:
 				it->rot.x = origPRS.rot.x; it->rot.y = origPRS.rot.y; it->rot.z = origPRS.rot.z;
 				it->scale = origPRS.scale;
 				it->hidden = origPRS.hidden;
+				it->JuiceSpeed = origPRS.JuiceSpeed;
+				it->JuiceType = origPRS.JuiceType;
+
 			}
 
 			//netmsg.Post("Render::=" + it->Name());//Disabled due to perf concerns
