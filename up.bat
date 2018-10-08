@@ -1,2 +1,2 @@
-git commit -a -m "up"
+git commit -a -m "%1"
 git push -u origin master

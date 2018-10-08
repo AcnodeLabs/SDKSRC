@@ -105,7 +105,11 @@ class Serializable : public PosRotScale {
 
 
 class GameObject : public Serializable {
+	
 public:
+	//Add PRS to multiple drawing of same model
+	//use getInstancePtr to access instances
+	vector<PosRotScale> prsInstances;
 	int modelId;
     ResourceInf* resInf;
     short custom_type;
@@ -118,7 +122,7 @@ public:
    // float Scale;
     bool billboard;
     PosRotScale desirable;
-	vector<PosRotScale> prsInstances;//Add PRS to multiple drawing of same model
+	
 	static i2 windowSize;
 
     CAnimator animPos, animRot, animScale;

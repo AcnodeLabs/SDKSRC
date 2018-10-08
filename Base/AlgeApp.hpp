@@ -676,11 +676,16 @@ public:
 		return (cornerDistance_sq <= (circleRadius*circleRadius));
 	}
 
-	void PlaySnd(char * name, int idx = 0) {
-		
+	string sndName;
+
+	void PlaySnd(string name, int idx = 0) {
+		sndName = name;
+		PlaySndEx((char*)(sndName.c_str()), idx);
+	}
+
+	void PlaySndEx(char * name, int idx = 0) {
 		output.pushP(CMD_SNDSET0+idx, $ name, 0);
 		output.pushP(CMD_SNDPLAY0+idx, $ name, 0);
-		
 	}
 
 	void SetTitle(char * name) {
