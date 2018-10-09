@@ -18,7 +18,7 @@ public:
 	float bz, width, height;
 	GameObject* gobs[128]; short nGobs;
 	GameObject* selectedObject;
-
+	
 	CAxis xyz;
 
 	short currentscene;
@@ -64,6 +64,7 @@ public:
 		counter = 0;
 		GameObject::windowSize.x = getBackgroundSize().x;
 		GameObject::windowSize.y = getBackgroundSize().y;
+		
 	}
 
 	void Deinit() {}
@@ -270,7 +271,7 @@ public:
 		UpdateCustom(it, instanceNo, deltaT);
 	
 
-		if (instanceNo>0) {
+		if (instanceNo>0 && it->applyTopLeftCorrectionWRTorigin) {//
 			PosRotScale* i = it->getInstancePtr(instanceNo);
 			i->pos.x = originX;
 			i->pos.y = originY;

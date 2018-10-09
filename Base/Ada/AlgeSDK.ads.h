@@ -134,7 +134,8 @@ public:
     PosRotScale desirable;
 	int JuiceType;
 	int JuiceSpeed;
-	
+	bool applyTopLeftCorrectionWRTorigin;
+
 	static i2 windowSize;
 
     CAnimator animPos, animRot, animScale;
@@ -247,6 +248,7 @@ public:
         UUID = "";
   //    Scale = 1.0f;
         billboard = false;
+		applyTopLeftCorrectionWRTorigin = false;
     }
 
     string Name() {
