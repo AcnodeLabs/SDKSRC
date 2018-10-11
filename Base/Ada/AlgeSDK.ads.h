@@ -25,9 +25,10 @@ public:
 	void clear() { x = 0; y = 0; }
 	i2() { clear(); };
 	i2(int mx, int my) { x = mx; y = my; }
-	i2 half() { return i2(x/2,y/2); }
+	i2 half() { return i2(x / 2, y / 2); }
 	i2 twice() { return i2(x * 2, y * 2); }
 };
+
 
 class f2 {
 public:
@@ -55,14 +56,16 @@ public:
     f3() {clear();};
 };
 
+
 class PosRotScale {
 public:
+
     f3 pos;
     f3 rot;
-    float scale = 1.0;
+    float scale;
 	bool hidden = false;
 	int JuiceType;
-	int JuiceSpeed;
+	float JuiceSpeed = 100.0;
 	float originalScale;
 };
 
@@ -108,10 +111,26 @@ class Serializable : public PosRotScale {
 
 enum JuiceTypes {
 	JUICE_ROTZ =1,
-	JUICE_ROTZ_PULSATE =2,
-	JUICE_PULSATE=3,
+	JUICE_PULSATE,
+	JUICE_PULSATE_FULLY,
+	JUICE_ROTZ_PULSATE,
+	JUICE_ROTXYZ,
+	JUICE_ROTXYZ_PULSATE_FULLY,
+	JUICE_CANCEL,
 	JUICES_END
 };
+
+string JuiceName(int j) {
+	if (j == JUICE_ROTZ) return "JUICE_ROTZ";
+	if (j == JUICE_PULSATE) return "JUICE_PULSATE";
+	if (j == JUICE_PULSATE_FULLY) return "JUICE_PULSATE_FULLY";
+	if (j == JUICE_ROTZ_PULSATE) return "JUICE_ROTZ_PULSATE";
+	if (j == JUICE_ROTXYZ_PULSATE_FULLY) return "JUICE_ROTXYZ_PULSATE_FULLY";
+	if (j == JUICE_ROTXYZ) return "JUICE_ROTXYZ";
+	if (j == JUICE_CANCEL) return "JUICE_CANCEL";
+	if (j == JUICES_END) return "JUICE_END";
+	return "Wrong ID";
+}
 
 
 class GameObject : public Serializable {
@@ -132,8 +151,7 @@ public:
    // float Scale;
     bool billboard;
     PosRotScale desirable;
-	int JuiceType;
-	int JuiceSpeed;
+
 	bool applyTopLeftCorrectionWRTorigin;
 
 	static i2 windowSize;
@@ -218,19 +236,28 @@ public:
         children.push_back(child);
         child->parent = this;
     }
-	void AddInstance(PosRotScale prs) {
+	PosRotScale* AddInstance(PosRotScale prs) {
+		if (prs.scale <= 0) prs.scale = 1.0;
 		prs.originalScale = prs.scale;
 		prsInstances.push_back(prs);
+		return &prs;
 	}
 
-	void AddInstance(f2 pos) {
+	PosRotScale*  AddInstance(f2 pos) {
 		PosRotScale prs;
 		prs.pos.x = pos.x;
 		prs.pos.y = pos.y;
+		prs.scale = this->scale;
+		prs.JuiceType = this->JuiceType;
+		prs.JuiceSpeed = this->JuiceSpeed;
+		prs.originalScale = this->originalScale;
 		prsInstances.push_back(prs);
+		return &prs;
 	}
+
+	//getInstance(0) returns main object instances are at 1..n
 	PosRotScale* getInstancePtr(int n) {
-		if (n <= 0) return 0;
+		if (n <= 0) return ((PosRotScale*)this);
 		return &prsInstances.at(n-1);
 	}
     GameObject() {

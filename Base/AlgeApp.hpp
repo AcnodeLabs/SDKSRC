@@ -1,6 +1,6 @@
 #include "CNetMsg.h"
 #include <Box2D/Box2D.h>
-/*extern*/ CNetMsg netmsg;
+extern CNetMsg netmsg;
 #define FIRST 1
 class AlgeApp {
 public:
@@ -132,7 +132,7 @@ public:
 
 
 
-	void AddResource(GameObject* g, string name, float scale = 1.0) {
+	GameObject* AddResource(GameObject* g, string name, float scale = 1.0) {
 		ResourceInf res;
 		res.Set(name, name + ".alx", name + ".tga", scale);
 		LoadModel(g, &res);
@@ -140,6 +140,7 @@ public:
 		g->pos.x = aCamera.windowWidth/2;
 		g->pos.y = aCamera.windowHeight/2;
 		g->originalScale = scale;
+		return g;
 	}
 	
 	int leftSide, rightSide, topSide, bottomSide, originX, originY;
@@ -188,25 +189,46 @@ public:
 	}
 
 
-	
 
 	void UpdateJuices(GameObject* it, int instanceNo, float deltaT) {
 		static float juice_sine;
 		static float juice_sine_angle;
-		PosRotScale* jprs = instanceNo < 1 ? (PosRotScale*)it : (it->getInstancePtr(instanceNo));
+		PosRotScale* jprs = (instanceNo < 1) ? reinterpret_cast<PosRotScale*>(it) : (it->getInstancePtr(instanceNo));
 		switch (it->JuiceType) {
 
 		case JuiceTypes::JUICE_ROTZ:
-			jprs->rot.z += (deltaT * it->JuiceSpeed);
+			jprs->rot.z += (deltaT * (jprs->JuiceSpeed));
 			break;
+		case JuiceTypes::JUICE_ROTXYZ:
+			jprs->rot.x += (deltaT * (jprs->JuiceSpeed));
+			jprs->rot.y += (deltaT * (jprs->JuiceSpeed));
+			jprs->rot.z += (deltaT * (jprs->JuiceSpeed));
+		break;
+		case JuiceTypes::JUICE_ROTXYZ_PULSATE_FULLY:
+			jprs->rot.x += (deltaT * (jprs->JuiceSpeed));
+			jprs->rot.y += (deltaT * (jprs->JuiceSpeed));
+			jprs->rot.z += (deltaT * (jprs->JuiceSpeed));
+			juice_sine_angle += 0.02f;
+			glScalef(abs(sin(juice_sine_angle)), abs(sin(juice_sine_angle)), abs(sin(juice_sine_angle)));		break;
 		case JuiceTypes::JUICE_ROTZ_PULSATE:
-			jprs->rot.z += (deltaT * it->JuiceSpeed);
-			juice_sine_angle += 0.01 * it->JuiceSpeed / 5.;
-			jprs->scale = jprs->originalScale + 0.01 *jprs->originalScale  * sin(juice_sine_angle);
+			jprs->rot.z += (deltaT * (jprs->JuiceSpeed));
+			juice_sine_angle += 0.2f;
+			glScalef(1. + 0.02 * sin(juice_sine_angle), 1. + 0.02 * sin(juice_sine_angle), 1. + 0.02 * sin(juice_sine_angle));
 			break;
 		case JuiceTypes::JUICE_PULSATE:
-			juice_sine_angle += deltaT * it->JuiceSpeed / 5.;
-			jprs->scale = jprs->originalScale  + 0.01 *jprs->originalScale  * sin(juice_sine_angle);
+			//jprs->rot.z += (deltaT * jprs->JuiceSpeed);
+			juice_sine_angle += 0.2f;
+			glScalef(1. + 0.02 * sin(juice_sine_angle), 1. + 0.02 * sin(juice_sine_angle), 1. + 0.02 * sin(juice_sine_angle));
+			break;
+		case JuiceTypes::JUICE_PULSATE_FULLY:
+			//jprs->rot.z += (deltaT * jprs->JuiceSpeed);
+			juice_sine_angle += 0.02f;
+			glScalef(abs(sin(juice_sine_angle)), abs(sin(juice_sine_angle)), abs(sin(juice_sine_angle)));
+			break;
+		case JuiceTypes::JUICE_CANCEL:
+			jprs->rot.x = 0;
+			jprs->rot.y = 0;
+			jprs->rot.z = 0;
 			break;
 		}
 	}
@@ -217,13 +239,7 @@ public:
 		glPushMatrix();
 		f3 relPos, relRot;
 
-		glScalef(it->scale, it->scale, it->scale);
-
-		if (edit && it == gobs[iSelectedObject]) {
-			wobble += 0.2f;
-			glScalef(1. + 0.01 * sin(wobble), 1. + 0.01 * sin(wobble), 1. + 0.01 * sin(wobble));
-		}
-
+	
 		relPos.x = it->pos.x;
 		relPos.y = it->pos.y;
 		relPos.z = it->pos.z;
@@ -252,7 +268,7 @@ public:
 
 		if (it->hidden) return;
 		
-		UpdateJuices(it, instanceNo, deltaT);
+		
 
 		glScalef(it->scale, it->scale, it->scale);
 		
@@ -270,7 +286,7 @@ public:
 		//it->Update(deltaT);
 		UpdateCustom(it, instanceNo, deltaT);
 	
-
+		
 		if (instanceNo>0 && it->applyTopLeftCorrectionWRTorigin) {//
 			PosRotScale* i = it->getInstancePtr(instanceNo);
 			i->pos.x = originX;
@@ -282,6 +298,13 @@ public:
 
 		if (it->billboard) alBillboardBegin();
 
+		glScalef(it->scale, it->scale, it->scale);
+
+		int m_j = it->JuiceType;//save  *1 >>>>>
+		if ((edit && it == gobs[iSelectedObject])) it->JuiceType = JuiceTypes::JUICE_PULSATE;
+
+		if (it != &aCamera) UpdateJuices(it, instanceNo, deltaT);
+		
 		if (edit) {
 			if (it->modelId >= 0) alDrawModel(it->modelId, wireframe);
 		}
@@ -289,6 +312,8 @@ public:
 			if (it->modelId >= 0) alDrawModel(it->modelId);
 		}
 		if (it->billboard) alBillboardEnd();
+
+		it->JuiceType = m_j;//restore *1 <<<<<
 
 		//ShowMarkerinOrthoMode(10);
 		glPopMatrix();
@@ -437,7 +462,7 @@ public:
 		{
 			if (r[1] == 'f') {// fps
 				sprintf(tval, "fps(%d)", fps);
-				netmsg.PostSub(string("Vars"), string(tval));
+			//	netmsg.PostSub(string("Vars"), string(tval));
 			}
 		};
 
@@ -597,7 +622,7 @@ public:
 		//
 #define DV /1.0
 		if (aCamera.GetMode() == Camera::CAM_MODE_2D) {
-			ViewOrthoBegin(aCamera.windowWidth, aCamera.windowHeight, 50); // Must End
+			ViewOrthoBegin(aCamera.windowWidth, aCamera.windowHeight, 1000); // Must End
 		}
 
 		if (aCamera.GetMode() == Camera::CAM_MODE_FPS) {
